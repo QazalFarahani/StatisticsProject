@@ -1,0 +1,165 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+<div dir = auto>
+مقدار‌های مخدوش گزارش شده‌اند. دو مقدار مخدوش به صورت نوشته فارسی هم در ستون های تابستان ۹۷ و پاییز ۹۱ به صورت دستی اصلاح شدندو داده‌های تک مقدار صفر هم به صورت دستی خط تیره گذاشته شدند.
+
+۶ ستون آخر را که داده‌های مخدوش زیادی داشتند از دیتا حذف میکنیم و داده‌های دیگر را با توجه به ندانستن کاربرد دیتاست خالی میگذاریم. در حالت کلی پر کردن این داده‌ها با مقادیر میانگین یا میانه میتواند باعث ایجاد خطا شود و در نظر نگرفتن مقادیر بهتر است.
+
+</div>
+
+```{r}
+library(readxl)
+library(writexl)
+df = readxl::read_excel("dataset3.xlsx",sheet = "Sheet1", range = "A1:AT25")
+df = df[-c(1), ]
+for (col in 2:ncol(df)) {
+  print(sum(unlist(lapply(lapply(df[, col], as.numeric), is.na))))
+}
+df = df[-c(41:46)]
+#View(df)
+df = as.data.frame(sapply(df, as.numeric))
+write_xlsx(x=df, "dataset_modified.xlsx")
+```
+
+```{r}
+df = readxl::read_excel("dataset_modified.xlsx",sheet = "Sheet1", range = "A1:AN24")
+df = df[-c(1)]
+df = t(df)
+v2 = rev(df[, 2])
+v1 = seq(7,45,1)
+
+data = data.frame(v1, v2, stringsAsFactors = F)
+#View(data)
+model <- lm(v2~v1)
+model$coefficients
+
+```
+```{r}
+library(ggplot2)
+plot(v2~v1, data)
+abline(model)
+```
+```{r}
+df = df[, -c(1)]
+#View(df)
+price = vector()
+time = vector()
+region = vector()
+for (i in seq(1:22)) {
+  price = c(price, df[,i])
+  time = c(time, seq(45,7,-1))
+  region = c(region, rep(i, 39))
+}
+data = data.frame(region, time, price)
+#View(data)
+model <- lm(price~time+region)
+model$coefficients
+
+
+```
+```{r}
+price = vector()
+time = vector()
+region = vector()
+for (i in seq(1:22)) {
+  price = c(price, df[,i])
+  time = c(time, seq(45,7,-1))
+  region = c(region, rep(i, 39))
+}
+
+data = data.frame(region, time, price)
+data$price <- as.numeric(gsub("\\.", "", data$price))
+#View(data)
+model <- lm(data$price~data$time+data$region)
+summary(model)
+
+```
+
+```{r}
+mat <- matrix(0, nrow=858,ncol=23)
+for (i in seq(2:21)) {
+  beg = i * 39 + 1
+  end = beg + 38
+  mat[beg:end, i+1] = 1
+}
+data = data.frame(mat, time, price)
+#View(data)
+lm = lm(price~., data)
+model$coefficients
+#View(data)
+summary(lm)
+
+```
+
+<div dir = auto>
+قسمت دوم با توجه به نتایج به دست آمده به مراتب ارور‌های کمتری دارد و در نتیجه روش مناسب‌تری ست.
+
+
+یکی از دلایل مهم آن میتواند نامرتبط بودن شماره محله به قیمت آن باشد. زیرا منطقه ای که خانه‌های با قیمت بالاتری دارد لزوما شماره بالاتری به آن داده نشده است. در واقع شماره گذاری محله ها کاملا مستقل از قیمت صورت گرفته.
+
+</div>
+
+
+```{r}
+df = t(df)
+X = df[, 22]
+Y = df[, 23]
+X <- as.numeric(gsub("\\.", "", X))
+Y <- as.numeric(gsub("\\.", "", Y))
+mean_x = mean(X)
+mean_y = mean(Y)
+mean_diff = mean_x - mean_y
+
+sum_x = 0
+for (variable in X) {
+  sum_x = sum_x + (variable - mean_x) ** 2
+}
+sum_y = 0
+for (variable in Y) {
+  sum_y = sum_y + (variable - mean_y) ** 2
+}
+n = length(df[, 22])
+
+sp = sqrt((sum_x + sum_y) / (n + n - 2))
+
+t <- (mean_diff)/(sp/sqrt(n) + sp/sqrt(n))
+p_value = 2 * pt(-abs(t),df=n + n -2)
+
+mean_x
+mean_y
+sp
+p_value
+
+t.test(X, Y)
+
+
+```
+
+```{r}
+Z = X - Y
+mean_z = mean(Z)
+var_z = var(Z)
+t <- (mean_z)/(sqrt(var_z/n))
+p_value = 2*pt(-abs(t),df=n-1)
+
+mean_z
+var_z
+p_value
+
+t.test(Z)
+
+```
+
+<div dir = auto>
+مقدار پی ولیدهای به دست آمده بزرگ است در نتیجه نمیتوانیم فرض صفر را رد کنیم.
+
+روش اول بهتر است و پی ولیو بیشتری دارد. همچنین جفت در نظر گرفتن داده ها میتواند تاثیراث دیگری را وارد مسئله کند و وابستگی‌هایی را ایجاد کند. مثلا وابستگی به دانشجو‌ها. اما با جفت نبودن این تاثیرات مختلف را حذف میکنیم و خود امتحان ها را مقایسه میکنیم.
+
+</div>
+
+

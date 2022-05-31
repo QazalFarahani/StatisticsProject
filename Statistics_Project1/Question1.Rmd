@@ -1,0 +1,132 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+<div dir = auto>
+در این سوال از توزیع پوآسون با پارامتر ۶ به ترتیب ۱۰، ۱۰۰ و ۱۰۰۰ نمونه به تعداد ۵۰ میگیریم. میانگین و واریانس نمونه‌ها را حساب می‌کنیم. و با کشیدن نمودار نرمال می‌بینیم که با افزایش تعداد نمونه‌ها، نمودار میانگین نمودار به نمودار نرمال نزدیک‌تر می‌شود که مطابق قضیه حد مرکزی‌ست و آن را تایید می‌کند.
+</div>
+
+```{r}
+# تابع توزیع
+library(ggplot2)
+library(ggthemes)
+x = 0:100
+poisson_function = dpois(x, lambda=50)
+plot(x, poisson_function, type="h")
+```
+
+```{r}
+range = 1:10
+lambda = 6
+means = vector()
+for (i in range) {
+  data = rpois(50, lambda)
+  means = c(means, mean(data))
+}
+mean(means)
+variance = var(means)
+variance
+means = (means - mean)/sqrt(variance)
+df = data.frame(range, means)
+gg = ggplot(df, aes(means)) +
+geom_histogram(aes(y=..density..)) +
+geom_function(fun = dnorm, n = 100, args = list(mean = mean, sd = sqrt(variance))) +
+geom_density(alpha=.2, fill="#FF6666") +
+ylab("")
+gg
+
+```
+
+```{r}
+range = 1:100
+lambda = 6
+means = vector()
+for (i in range) {
+  data = rpois(50, lambda)
+  means = c(means, mean(data))
+}
+mean(means)
+variance = var(means)
+variance
+means = (means - mean)/sqrt(variance)
+df = data.frame(range, means)
+gg = ggplot(df, aes(means)) +
+geom_histogram(aes(y=..density..)) +
+geom_function(fun = dnorm, n = 100, args = list(mean = mean, sd = sqrt(variance))) +
+geom_density(alpha=.2, fill="#FF6666") +
+ylab("")
+gg
+
+```
+
+```{r}
+range = 1:1000
+lambda = 6
+means = vector()
+for (i in range) {
+  data = rpois(50, lambda)
+  means = c(means, mean(data))
+}
+mean = mean(means)
+variance = var(means)
+variance
+means = (means - mean)/sqrt(variance)
+df = data.frame(range, means)
+gg = ggplot(df, aes(means)) +
+geom_histogram(aes(y=..density..)) +
+geom_function(fun = dnorm, n = 100, args = list(mean = mean, sd = sqrt(variance))) +
+geom_density(alpha=.2, fill="#FF6666") +
+ylab("")
+gg
+
+```
+```{r}
+library(fastR2)
+getdata <- function(...)
+{
+    e <- new.env()
+    name <- data(..., envir = e)[1]
+    e[[name]]
+}
+df = getdata("Births")
+births_mean = aggregate(df['births'], list(df$day_of_year), mean)
+maximum = max(births_mean['births'])
+minimum = min(births_mean['births'])
+max_index = which(births_mean['births'] == maximum)
+min_index = which(births_mean['births'] == minimum)
+max_index
+min_index
+```
+```{r}
+births_mean = aggregate(df['births'], list(df$month), mean)
+births_mean[order(births_mean$births),]
+```
+```{r}
+births_mean = aggregate(df['births'], list(df$year), mean)
+gg = ggplot(births_mean, aes(x=Group.1, y=births)) + 
+geom_bar(stat = "identity")
+gg
+```
+
+<div dir = auto>
+* دیتاست مرتب بود از قبل.:)
+</div>
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+df = storms
+df = df[order(df$hour),]
+df = df[order(df$day),]
+df = df[order(df$month),]
+df = df[order(df$year),]
+
+write.csv(x=df, file="storms_report")
+
+df$status=as.factor(df$status)
+ggplot(df)+geom_point(mapping=aes(x=lat,y=long, color=status))
+
+```
+

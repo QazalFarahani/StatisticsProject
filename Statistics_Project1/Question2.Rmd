@@ -1,0 +1,118 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r}
+df = read.table("had.txt", sep = "")
+df = df[sample(1:nrow(df)), ]
+label = df['V7']
+features = df[,1:6]
+
+split = sample(c(rep(0, 0.8 * nrow(label)), rep(1, 0.2 * nrow(label))))
+train_label = label[split == 0,]
+test_label = label[split == 1,]
+train_features = features[split == 0,]
+test_features = features[split == 1,]
+
+write.csv(x=train_label, file="train_label.txt")
+write.csv(x=test_label, file="test_label.txt")
+write.csv(x=train_features, file="train_features.txt")
+write.csv(x=test_features, file="test_features.txt")
+
+data = data.frame(train_features, train_label)
+model <- lm(train_label~V1+V2+V3+V4+V5+V6, data=data)
+summary(model)
+
+
+```
+<div dir="auto">
+بخش resuduals تفاوت داده‌ها را با داده‌های تخمین زده شده نشان می‌دهد و شامل میانگین مینیمم ماکسیمم، میانه و چارک‌هاست و میتوانیم بفهمیم چقدر داده ما متقارن است. در حالت کلی دوست داریم متقارن و میانه برابر صفر باشد..
+
+
+Coefficients — Estimate
+ضرایب به دست آمده در مدل را نشان می‌دهد.
+
+
+Coefficients — Std. Error
+تخمینی از standard deviation ضرایب به دست آمده است.
+
+
+Coefficients — t value
+ضرایب به دست آمده تقسیم بر standard error است و دوست داریم که این مقادیر زیاد باشند زیرا نشان می‌دهد که ارور کم است.
+
+
+Coefficients — Pr(>|t|)
+مقادیری است که توسط t value و t distribution به دست میآید. و می تواند این اطمینان را دهد که ضرایب صفر نیستند. اگر کمتر از 0.05 باشد.
+
+
+Residual Standard Error
+نشان می‌دهد که مدل چقدر خوب روی دیتای ما فیت شده است. نمودی از اختلاف مقادیر به دست آمده از خط است.
+
+
+Multiple R-squared and Adjusted R-squared
+مقدار اول نشان می‌دهد چقدر مدل خوب فیت شده است. و مقدار دوم برای multiple regression کاربرد دارد. 
+
+
+F-statistic and p-value
+ نشان میدهد که فرض صفر باید رد شود یا خیر که فرض صفر این است که رابطه‌ای بین متغیر های مستقل و وابسته وجود دارد یا خیر.
+در بیشتر مواقع مقدار کمتر از ۰.۰۵ نشان میدهد که حداقل یک ضریب وجود دارد که صفر نباشد.
+
+
+طبق نتایج به دست آمده بیشترین ضریب برای ستون دوم و کمترین برای ستون آخر است.
+بزرگ بودن ضریب میتواند تاثیر بیشتر آن فیچر در پیشبینی داشته باشد اما لزوما نشان دهنده اهمیت بیشتر آن فیچر نیست.
+برای بهتر شدن مقایسه باید داده‌ها را در همه ستون‌های آن نرمال کنیم و سپس میتوانیم مقایسه را انجام دهیم.
+ </div>
+
+  
+```{r}
+coeff = data.frame(model$coefficients)
+Vec = c(rep(1, nrow(test_features)))
+test_features = data.frame(Vec, test_features)
+
+predictions = as.matrix(test_features) %*% as.matrix(coeff)
+acc = vector()
+
+
+for (i in 1:nrow(predictions)) {
+    if (predictions[i] > 0) {
+      pred_vec = c(pred_vec, 1)
+    }
+    else
+      pred_vec = c(pred_vec, -1)
+  
+  }
+  count = 0
+  for (i in 1:nrow(predictions)) {
+    if (pred_vec[i] == test_label[i])
+      count = count + 1
+  }
+  count / nrow(test_features)
+
+
+for (alpha in seq(-2, 2, 0.1)) {
+  pred_vec = vector()
+  for (i in 1:nrow(predictions)) {
+    if (predictions[i] > alpha) {
+      pred_vec = c(pred_vec, 1)
+    }
+    else
+      pred_vec = c(pred_vec, -1)
+  
+  }
+  count = 0
+  for (i in 1:nrow(predictions)) {
+    if (pred_vec[i] == test_label[i])
+      count = count + 1
+  }
+  acc = c(acc, count / nrow(test_features))
+}
+plot(seq(-2, 2, 0.1), acc)
+print(-2 + which.max(acc) * 0.1)
+
+```
+
+
+

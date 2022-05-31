@@ -1,0 +1,320 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+<div dir = auto>
+در زیر می‌توانیم درباره‌ی مقادیر ستون‌های مختلف اطلاعاتی درباره نوع آن‌ها و اطلاعات کمی درباره توزیع آن‌ها به دست آوریم.
+</div>
+```{r}
+df = read.csv("lyon_housing.csv")
+str(df)
+summary(df)
+#View(df)
+```
+
+```{r}
+head(df, 10)
+```
+<div dir = auto>
+با توجه به نمودارهای زیر، مناطق تفاوت بسیار فاحشی از لحاظ قیمت با یکدیگر ندارند و همچنین خانه با بالاترین قیمت مربوط به منطقه‌ی Villeurbanne است.  
+</div>
+```{r}
+library(ggplot2)
+ggplot(df, aes(x=df$lat, y=df$long)) + 
+geom_point(aes(col = df$price))
+```
+
+<div dir = auto>
+می‌توانیم مناطق مختلف و قرارگیری اون‌ها رو در شکل ببینیم.
+</div>
+
+```{r}
+library(ggplot2)
+ggplot(df, aes(x=df$lat, y=df$long)) + 
+geom_point(aes(col = df$district))
+```
+
+<div dir = auto>
+تعداد داده‌های مخدوش را محاسبه میکنیم. برای ستون surface_effective_usabel داده‌ی از دست رفته‌ی زیادی داریم و میتوانیم این ستون را از دیتاسیت حذف کنیم. برای ستون‌های latitude و longitude تعداد داده‌های مخدوش کمتر است اما جای آن‌ها مقادیری قرار نمیدهیم و در محاسابت بعدی این خانه‌ها را به صورت جدا حذف می‌کنیم یعنی در محاسابت به دلیل NA بودن آن‌ها را لحاظ نمیکنیم.
+</div>
+
+
+```{r}
+colSums(is.na(df))
+```
+
+<div dir = auto>
+در شکل زیر می‌توان نمیودار قیمت را مشاهده کرد. انتظار داریم نمودار قیمت توزیع نرمال داشته باشد و همانطور که در شکل مشخص است شکل هیستوگرام قیمت bell curve است.
+</div>
+
+```{r}
+hist(df$price,breaks=100, col = 'khaki')
+```
+
+<div dir = auto>
+در شکل زیر می‌توانیم میانگین قیمت را طی سال‌های مختلف مشاهده کنیم. مشخص است که قیمت خانه‌ها در طی سال سیر صعودی داشته است. که قابل انتظار است و می‌تواند دلایل متعددی از جمله تورم داشته باشد.
+</div>
+
+```{r}
+yr <- substr(df$date_transaction, 1, 2)
+year_df = data.frame(yr, df$price)
+mean = aggregate(year_df$df.price, list(year_df$yr), mean)
+gg = ggplot(mean, aes(x=Group.1, y=x)) + 
+geom_bar(stat = "identity", fill = 'darkgoldenrod1')
+gg
+```
+
+<div dir = auto>
+با توجه به نمودار زیر می‌توان دید که تعداد فروش خانه‌ها هم در طی این سال‌ها روند کاهشی داشته است.
+می‌تواند علت آن کاهش توان خرید در اثر افزایش تورم باشد.
+</div>
+
+```{r}
+yr <- substr(df$date_transaction, 1, 2)
+hist(as.numeric(yr), breaks = 6, col = 'darkgoldenrod3', main = "Frequency of each year")
+```
+
+<div dir = auto>
+در نمودار زیر می‌توان مشاهده کرد که میانگین قیمت خانه در ماه‌های مختلف تفاوت چندانی ندارد و تقریبا ثابت است.
+</div>
+
+```{r}
+month <- substr(df$date_transaction, 4, 5)
+month_df = data.frame(month, df$price)
+mean = aggregate(month_df$df.price, list(month_df$month), mean)
+gg = ggplot(mean, aes(x=Group.1, y=x)) + 
+geom_bar(stat = "identity", fill = 'brown3')
+gg
+```
+
+<div dir = auto>
+با توجه به نمودار به جز ماه اول سال بیشترین فروش تقریبا مربوط به وسط سال است. با توجه به مقاله Zillow در میانه سال به دلیل “buyer-desparation” فروشنده‌ها ممکن است با قیمت‌های محتلف توافق کنند و این میزان فروش خانه‌ها را افزایش می‌دهد.
+</div>
+
+```{r}
+month <- substr(df$date_transaction, 4, 5)
+hist(as.numeric(month), breaks = 12, col = 'brown4')
+```
+
+```{r}
+coordinates = df[c(12, 13)]
+df = df[-c(6, 12, 13)]
+```
+
+<div dir = auto>
+در نمودار زیر می‌توان مقادیر outlier را برای هر منطقه مشاهده کرد. می‌توان دید بیشترین قیمت مربوط به منطقه‌ی Villeurbanne است اما Q1 و Q3 به میانه داده‌ها نزدیک‌تر هستند . داده‌ها در این منطقه تراکم بیشتری حول میانه دارند. اما در منطقه‌ی Lyon 7e کمترین تراکم داده‌ها حول میانه را داریم.
+</div>
+
+```{r}
+library(ggplot2)
+ggplot(df, aes(x=district, y=price, fill=district))+
+  geom_boxplot()
+```
+
+<div dir = auto>
+همانطور که قابل پیش‌بینی‌ست قیمت خانه‌های maison از appartementsبیشتر است و قیمت آپارتمان‌ها به گونه‌ای است که نصف آن‌ها در رنج کمتری حول میانه قرار می‌؛یرند و متراکم‌تر هستند اما در تو نوع خانه دارای outlier هستند.
+</div>
+
+```{r}
+ggplot(df, aes(x=type_property, y=price, fill=type_property))+
+  geom_boxplot()
+```
+
+<div dir = auto>
+میخواهیم مدل رگرسیونی بسازیم و حال بین ستون‌های مختلف میزان کوریلیشن آن را با قیمت میسنجیم. در صورت داشتن کوریلیشن آن را در مدل استفاده می‌کنیم در غیر این صورت آن را از مدل حذف میکنیم.
+با توجه به شکل اول به نظر می‌رسد قیمت با تعداد اتاق‌ها و مساحت خانه کوریلیشن زیادی داشته باشد.
+در شکل زیر برای ستون‌های numeric نمودار‌ها دو به دو رسم کرده‌ایم.
+همانطور که مشخص است بعضی داده‌ها با هم کوریلیشن مشخص‌تری دارند. در ادامه به طور دقیقا تر این نمودارها را بررسی میکنیم.
+</div>
+
+```{r}
+library(corrplot)
+sub_df = df[c(4, 5, 6, 7, 8)]
+cor.table = cor(sub_df)
+corrplot(cor.table)
+pairs(sub_df, col = 'lightslateblue')
+```
+
+<div dir = auto>
+در شکل زیر نمودار قیمت و تعداد اتاق‌ها را مشاهده میکنیم. مشخص است با افزایش تعداد اتاق‌ها قیمت خانه افزایش پیدا می‌کند. در تعداد اتاق‌های بیشتر outlier کمتری داریم .
+همچنین می‌توان با آنالیز واریانس مقدار p value را محاسبه کرد و آزمون زیر را انجام داد:
+فرض صفر: هیچ کوریلیشنی بین تعداد اتاق‌ها و قیمت وجود ندارد.
+فرض یک: بین قیمت و تعداد اتاق‌ها کوریلیشن وجود دارد. 
+با توجه به اینکه مقدار p value از ۰.۰۵ کمتر است می‌توان فرض h0 را رد کرد. در نتیجه بین تعداد اتاق‌ها و قیمت کوریلیشن وجود دارد.
+</div>
+
+```{r}
+boxplot(df$price~df$rooms_count, col = 'blue')
+anlysis = aov(price~rooms_count, data=df)
+summary(anlysis)
+```
+
+<div dir = auto>
+نمودار قیمت و مساخت خانه رسم شده است. می‌توان مطابق بخش قبل آزمون تیت کوریلیشن انجام داد. با توجه به نتیجه میزان کوریلیشن نزدیک به ۰.۷۵ است. با توجه به آن بین این دو مقدار کوریلیشن وجود دارد در نتیجه مساحت خانه را در مدل وارد میکنیم.
+</div>
+
+```{r}
+plot(df$price,df$surface_housing, col = 'blue')
+cor.test(~price+surface_housing,data=df)
+```
+
+<div dir = auto>
+نمودار قیمت و تعداد پارکینگ‌ها را رسم کرده‌ایم. مطابق بخش‌های قبل میتوانیم آنالیز واریانس انجام دهیم. با توجه به نتیجه فرض صفر را یعنی عدم وجود کوریلیشن را رد میکنیم. در نتیجه بین قیمت خانه و تعداد پارکینگ کوریلیشن وجود دارد و میتوانیم این ستون را در مدل استفاده کنیم.
+
+</div>
+
+```{r}
+boxplot(df$price~df$parkings_count, col = 'blue')
+anlysis = aov(price~parkings_count, data=df)
+summary(anlysis)
+```
+
+<div dir = auto>
+نمودار قیمت خانه و surface_terrian رسم شده است. آزمون کوریلیشن انجام میدهیم. مقدار کوریلیشن به دست آمده ۰.۳ است. با توجه به اینکه مقدار کوریلیشن کم است از این ستون برای پیش بینی قیمت استفاده نمیکنیم و آن را از مدل حذف میکنیم.
+
+</div>
+
+```{r}
+plot(df$price,df$surface_terrain, col = 'blue')
+cor.test(~price+surface_terrain,data=df)
+```
+
+<div dir = auto>
+و در نهایت با استفاده از ستون‌های انتخاب شده که با قیمت کوریلیشن داشتند مدل خطی خود را میسازیم.
+هیستوگرام حاصل توزیع نزدیک به نرمال دارد که این نتیجه اهمیت دارد زیرا نشان می‌دهد مدل ماانتظار می‌رود با توجه به نرمال بودن ارورها خوب کار کند و فرض‌هایی که در ساخت مدل کرده‌ایم درست باشند.
+</div>
+
+
+```{r}
+model = lm(df$price~df$rooms_count+df$surface_housing+df$parkings_count)
+summary(model)
+residuals <- data.frame('Residuals' = model$residuals)
+res_hist <- ggplot(residuals, aes(x=Residuals)) + geom_histogram(color='black', fill='skyblue', bins = 100)
+res_hist
+```
+
+```{r}
+library("rjson")
+stations <- fromJSON(file = "station_coordinates.json")
+count = 0
+for (l in stations) {
+  count = count + lengths(l[1])
+}
+count
+```
+
+```{r}
+mat = matrix(0, nrow=count, ncol=3)
+row = 1
+for (s in stations) {
+  for (l in s[1]) {
+    for (variable in l) {
+      mat[row, 1] = variable
+      row = row + 1
+    }
+  }
+}
+row = 1
+for (s in stations) {
+  for (l in s[2]) {
+    for (variable in l) {
+      mat[row, 2] = variable
+      row = row + 1
+    }
+  }
+}
+row = 1
+for (s in stations) {
+  for (l in s[3]) {
+    for (variable in l) {
+      mat[row, 3] = variable
+      row = row + 1
+    }
+  }
+}
+stations = data.frame(mat)
+```
+
+```{r}
+library(dplyr)
+stations = distinct(stations)
+```
+
+```{r}
+stations$X2 <- as.numeric(stations$X2)
+stations$X3 <- as.numeric(stations$X3)
+coordinates$latitude <- as.numeric(coordinates$latitude)
+coordinates$longitude <- as.numeric(coordinates$longitude)
+
+ggplot(stations, aes(x=stations$X2, y=stations$X3)) + 
+geom_point()
+```
+
+```{r}
+library("geosphere")
+min_dist = vector()
+
+for (i in 1:length(coordinates$latitude)) {
+  house = c(coordinates[i, 2], coordinates[i, 1])
+  min = 2100
+  for (j in length(stations$X2)) {
+    station = c(stations[j, 3], stations[j, 2])
+    d = 3963.0 * acos(sin(coordinates[i, 1]) * sin(stations[j, 2])) +
+      cos(coordinates[i, 1]) * cos(stations[j, 2]) * cos(coordinates[i, 2] - stations[j, 3])
+    dist = d * 1.609344
+    #dist = distCosine(house, station)
+    if (!is.na(dist) && dist < min) {
+      min = dist
+    }
+  }
+  min_dist = c(min_dist, min)
+}
+
+```
+
+
+<div dir = auto>
+هیستوگرام فاصله تا نزدیک‌ترین ایستگاه نزدیک به نرمال است و این موضوع قابل انتظار است.
+</div>
+
+```{r}
+hist(min_dist, breaks = 10, col = 'brown4')
+```
+
+```{r}
+dist_to_uni = vector()
+
+for (i in 1:length(coordinates$latitude)) {
+  pt1 = c(coordinates[i, 2], coordinates[i, 1])
+  pt2 = c(4.865561717882041, 45.780234113880425)
+  dist = distCosine(pt1, pt2)
+  dist_to_uni = c(dist_to_uni, dist)
+}
+dist_to_uni = dist_to_uni / max(dist_to_uni)
+```
+
+
+<div dir = auto>
+میخواهیم از بین آپارتمان‌های موجود با توجه به معیار‌ها خانه‌ای را پیدا کنیم.
+برای پیدا کردن بهترین خانه با توجه به معیارها تابعی از قیمت، فاصله تا دانشگاه، فاصله تا نزدیک‌ترین ایستگاه مترو، تعداد اتاق‌ها و مساخت خانه در نظر میگیریم و برای هر ستون ضریبی در نظر میگیریم. ستون‌ها را از قبل نرمال میکنیم و در نهایت از ستون آخر ایجاد شده مینیمم مقدار را در نظر میگیریم. این خانه با توجه به مهم بودن فاصله تا دانشگاه در منطقه Villeurbann قرار دارد و با توجه به اینکه معیارهای مورد نظر در هر منطقه نزدیک به هم است احتمالا همین منطقه برای خرید خانه مناسب باشد.
+</div>
+
+```{r}
+df$type_property = as.factor(df$type_property)
+data = data.frame(df$type_property, df$surface_housing, df$rooms_count, df$price, min_dist, dist_to_uni)
+data = data[data$df.type_property == 'appartement',]
+data = data[-c(1)]
+data$df.surface_housing = -data$df.surface_housing / max(data$df.surface_housing)
+data$df.rooms_count = -data$df.rooms_count / max(data$df.rooms_count)
+data$df.price = data$df.price / max(data$df.price)
+data$min_dist = data$min_dist / max(data$min_dist)
+data$dist_to_uni = data$dist_to_uni / max(data$dist_to_uni)
+data$func=10*data$df.surface_housing+5*data$df.rooms_count+10*data$df.price+5*data$min_dist+100*data$dist_to_uni
+index = which.min(data$func)
+index
+print(df[index,])
+
+```
+
+
+
